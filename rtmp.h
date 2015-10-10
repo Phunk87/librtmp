@@ -34,6 +34,7 @@
 #include <stddef.h>
 
 #include "amf.h"
+#include "error.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -154,6 +155,7 @@ extern "C"
 
     int protocol;
     int timeout;		/* connection timeout in seconds */
+    int send_timeout; /* send data timeout */
 
     unsigned short socksport;
     unsigned short port;
@@ -208,6 +210,8 @@ extern "C"
     int num;
   } RTMP_METHOD;
 
+  typedef void (*RTMPErrorCallback)(RTMPError *error);
+
   typedef struct RTMP
   {
     int m_inChunkSize;
@@ -252,6 +256,9 @@ extern "C"
     RTMPPacket m_write;
     RTMPSockBuf m_sb;
     RTMP_LNK Link;
+
+    RTMPErrorCallback m_errorCallback;
+    RTMPError *m_error;
   } RTMP;
 
   int RTMP_ParseURL(const char *url, int *protocol, AVal *host,

@@ -834,13 +834,24 @@ RTMP_Connect0(RTMP *r, struct sockaddr * service)
       return FALSE;
     }
 
-  /* set timeout */
+  /* set receive timeout */
   {
     SET_RCVTIMEO(tv, r->Link.timeout);
     if (setsockopt
         (r->m_sb.sb_socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(tv)))
       {
-        RTMP_Log(RTMP_LOGERROR, "%s, Setting socket timeout to %ds failed!",
+        RTMP_Log(RTMP_LOGERROR, "%s, Setting socket recieve timeout to %ds failed!",
+	    __FUNCTION__, r->Link.timeout);
+      }
+  }
+
+  /* set send timeout*/
+  {
+    SO_SNDTIMEO(tv, r->Link.send_timeout);
+    if (setsockopt
+        (r->m_sb.sb_socket, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv, sizeof(tv)))
+      {
+        RTMP_Log(RTMP_LOGERROR, "%s, Setting socket send timeout to %ds failed!",
 	    __FUNCTION__, r->Link.timeout);
       }
   }
