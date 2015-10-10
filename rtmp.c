@@ -257,7 +257,12 @@ RTMP_Init(RTMP *r)
   r->m_fAudioCodecs = 3191.0;
   r->m_fVideoCodecs = 252.0;
   r->Link.timeout = 30;
+    r->Link.send_timeout = 3;
   r->Link.swfAge = 30;
+    
+    r->m_errorCallback = NULL;
+    r->m_error = NULL;
+    r->m_userData = NULL;
 }
 
 void
@@ -847,9 +852,12 @@ RTMP_Connect0(RTMP *r, struct sockaddr * service)
 
   /* set send timeout*/
   {
-    SO_SNDTIMEO(tv, r->Link.send_timeout);
+    struct timeval timeout;
+    timeout.tv_sec = r->Link.send_timeout;
+    timeout.tv_usec = 0;
+    
     if (setsockopt
-        (r->m_sb.sb_socket, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv, sizeof(tv)))
+        (r->m_sb.sb_socket, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout)))
       {
         RTMP_Log(RTMP_LOGERROR, "%s, Setting socket send timeout to %ds failed!",
 	    __FUNCTION__, r->Link.timeout);

@@ -25,6 +25,8 @@
  *  http://www.gnu.org/copyleft/lgpl.html
  */
 
+#define NO_CRYPTO
+
 #if !defined(NO_CRYPTO) && !defined(CRYPTO)
 #define CRYPTO
 #endif
@@ -210,7 +212,7 @@ extern "C"
     int num;
   } RTMP_METHOD;
 
-  typedef void (*RTMPErrorCallback)(RTMPError *error);
+  typedef void (*RTMPErrorCallback)(RTMPError *error, void *userData);
 
   typedef struct RTMP
   {
@@ -259,6 +261,7 @@ extern "C"
 
     RTMPErrorCallback m_errorCallback;
     RTMPError *m_error;
+    void *m_userData;
   } RTMP;
 
   int RTMP_ParseURL(const char *url, int *protocol, AVal *host,
