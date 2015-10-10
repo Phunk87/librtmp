@@ -1,6 +1,8 @@
 #include "error.h"
+#include <stdlib.h>
+#include <string.h>
 
-void RTMPError_New(int code, const char *message) {
+RTMPError *RTMPError_New(int code, const char *message) {
   RTMPError *error = (RTMPError *)malloc(sizeof(RTMPError));
   error->code = code;
   error->message = (char *)malloc(strlen(message) * sizeof(char));
