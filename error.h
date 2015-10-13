@@ -1,12 +1,14 @@
 #ifndef __ERROR_H__
 #define __ERROR_H__
 
+#include <stdlib.h>
+
 typedef struct RTMPError {
 	int code;
 	char *message;
 } RTMPError;
 
-RTMPError *RTMPError_New(int code, const char *message);
+void RTMPError_Alloc(RTMPError *error, size_t msg_size);
 void RTMPError_Free(RTMPError *error);
 
 // error defines
@@ -26,6 +28,8 @@ enum {
 	RTMPErrorNetStreamPlayStreamNotFound = -1010,	   //	"NetStream play stream not found"
 	RTMPErrorNetConnectionConnectInvalidApp = -1011, //	"NetConnection connect invalip app"
 	RTMPErrorSanityFailed = -1012,	                 //	"Sanity failed. Trying to send header of type: 0x%02X"
+    RTMPErrorSocketClosedByPeer = -1013,         // "RTMP socket closed by peer"
+    RTMPErrorRTMPConnectStreamFailed = -1014,	// "RTMP connect stream failed"
 
 	// SSL errors
 	RTMPErrorTLSConnectFailed = -1200,	//	"TLS_Connect failed"

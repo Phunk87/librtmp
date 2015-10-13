@@ -2,12 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-RTMPError *RTMPError_New(int code, const char *message) {
-  RTMPError *error = (RTMPError *)malloc(sizeof(RTMPError));
-  error->code = code;
-  error->message = (char *)malloc(strlen(message) * sizeof(char));
-
-  return error;
+void RTMPError_Alloc(RTMPError *error, size_t msg_size) {
+    RTMPError_Free(error);
+    
+    error->code = 0;
+    error->message = (char *)calloc(1, msg_size);
 }
 
 void RTMPError_Free(RTMPError *error) {
@@ -16,6 +15,5 @@ void RTMPError_Free(RTMPError *error) {
       free(error->message);
       error->message = NULL;
     }
-    free(error);
   }
 }
