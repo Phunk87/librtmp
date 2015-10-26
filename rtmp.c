@@ -251,19 +251,19 @@ RTMP_Init(RTMP *r)
     RTMP_TLS_Init();
 #endif
 
-  memset(r, 0, sizeof(RTMP));
-  r->m_sb.sb_socket = -1;
-  r->m_inChunkSize = RTMP_DEFAULT_CHUNKSIZE;
-  r->m_outChunkSize = RTMP_DEFAULT_CHUNKSIZE;
-  r->m_nBufferMS = 30000;
-  r->m_nClientBW = 2500000;
-  r->m_nClientBW2 = 2;
-  r->m_nServerBW = 2500000;
-  r->m_fAudioCodecs = 3191.0;
-  r->m_fVideoCodecs = 252.0;
-  r->Link.timeout = 30;
-    r->Link.send_timeout = 3;
-  r->Link.swfAge = 30;
+    memset(r, 0, sizeof(RTMP));
+    r->m_sb.sb_socket = -1;
+    r->m_inChunkSize = RTMP_DEFAULT_CHUNKSIZE;
+    r->m_outChunkSize = RTMP_DEFAULT_CHUNKSIZE;
+    r->m_nBufferMS = 30000;
+    r->m_nClientBW = 2500000;
+    r->m_nClientBW2 = 2;
+    r->m_nServerBW = 2500000;
+    r->m_fAudioCodecs = 3191.0;
+    r->m_fVideoCodecs = 252.0;
+    r->Link.timeout = 10;
+    r->Link.send_timeout = 10;
+    r->Link.swfAge = 30;
     
     r->m_errorCallback = NULL;
     r->m_error = NULL;
@@ -670,7 +670,7 @@ int RTMP_SetOpt(RTMP *r, const AVal *opt, AVal *arg, RTMPError *error)
   return TRUE;
 }
 
-int RTMP_SetupURL(RTMP *r, char *url, RTMPError *error)
+int RTMP_SetupURL(RTMP *r, const char *url, RTMPError *error)
 {
   AVal opt, arg;
   char *p1, *p2, *ptr = strchr(url, ' ');
@@ -680,7 +680,7 @@ int RTMP_SetupURL(RTMP *r, char *url, RTMPError *error)
   if (ptr)
     *ptr = '\0';
 
-  len = strlen(url);
+  len = (int)strlen(url);
   ret = RTMP_ParseURL(url, &r->Link.protocol, &r->Link.hostname,
   	&port, &r->Link.playpath0, &r->Link.app);
   if (!ret)
@@ -4394,7 +4394,8 @@ fail:
   }
 
   /* first time thru */
-  if (!(r->m_read.flags & RTMP_READ_HEADER))
+//  if (!(r->m_read.flags & RTMP_READ_HEADER))
+    if (0)
     {
       if (!(r->m_read.flags & RTMP_READ_RESUME))
 	{
