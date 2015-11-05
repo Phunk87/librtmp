@@ -30,6 +30,7 @@ enum {
 	RTMPErrorSanityFailed = -1012,	                 //	"Sanity failed. Trying to send header of type: 0x%02X"
     RTMPErrorSocketClosedByPeer = -1013,         // "RTMP socket closed by peer"
     RTMPErrorRTMPConnectStreamFailed = -1014,	// "RTMP connect stream failed"
+    RTMPErrorSocketTimeout = -1015, // "RTMP socket timeout"
 
 	// SSL errors
 	RTMPErrorTLSConnectFailed = -1200,	//	"TLS_Connect failed"

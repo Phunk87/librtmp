@@ -923,6 +923,10 @@ RTMP_Connect0(RTMP *r, struct sockaddr * service, RTMPError *error)
 	    __FUNCTION__, r->Link.timeout);
       }
   }
+    
+    /* ignore sigpipe */
+    int     kOne = 1;
+    setsockopt(r->m_sb.sb_socket, SOL_SOCKET, SO_NOSIGPIPE, &kOne, sizeof(kOne));
 
   setsockopt(r->m_sb.sb_socket, IPPROTO_TCP, TCP_NODELAY, (char *) &on, sizeof(on));
 
@@ -1399,9 +1403,24 @@ ReadN(RTMP *r, char *buffer, int n)
 		    HTTP_Post(r, RTMPT_IDLE, "", 1);
 		  if (RTMPSockBuf_Fill(&r->m_sb) < 1)
 		    {
-		      if (!r->m_sb.sb_timedout)
-		        RTMP_Close(r, NULL);
-		      return 0;
+                if (!r->m_sb.sb_timedout) {
+                    RTMP_Close(r, NULL);
+                } else {
+                    RTMPError error = {0};
+                    
+                    char msg[100];
+                    memset(msg, 0, 100);
+                    strcat(msg, "RTMP socket timeout");
+                    RTMPError_Alloc(&error, strlen(msg));
+                    error.code = RTMPErrorSocketTimeout;
+                    strcpy(error.message, msg);
+                    
+                    RTMP_Close(r, &error);
+                    
+                    RTMPError_Free(&error);
+                }
+		        
+                return 0;
 		    }
 		}
 	      HTTP_read(r, 0);
@@ -1419,9 +1438,24 @@ ReadN(RTMP *r, char *buffer, int n)
 	    {
 	      if (RTMPSockBuf_Fill(&r->m_sb) < 1)
 	        {
-	          if (!r->m_sb.sb_timedout)
-	            RTMP_Close(r, NULL);
-	          return 0;
+                if (!r->m_sb.sb_timedout) {
+                    RTMP_Close(r, NULL);
+                } else {
+                    RTMPError error = {0};
+                    
+                    char msg[100];
+                    memset(msg, 0, 100);
+                    strcat(msg, "RTMP socket timeout");
+                    RTMPError_Alloc(&error, strlen(msg));
+                    error.code = RTMPErrorSocketTimeout;
+                    strcpy(error.message, msg);
+                    
+                    RTMP_Close(r, &error);
+                    
+                    RTMPError_Free(&error);
+                }
+                
+                return 0;
 		}
 	      avail = r->m_sb.sb_size;
 	    }
@@ -1447,7 +1481,7 @@ ReadN(RTMP *r, char *buffer, int n)
 	{
 	  RTMP_Log(RTMP_LOGDEBUG, "%s, RTMP socket closed by peer", __FUNCTION__);
 	  /*goto again; */
-        RTMPError error;
+        RTMPError error = {0};
         
         char msg[100];
         memset(msg, 0, 100);
@@ -2446,7 +2480,7 @@ HandleInvoke(RTMP *r, const char *body, unsigned int nBodySize)
   txn = (int)AMFProp_GetNumber(AMF_GetProp(&obj, NULL, 1));
   RTMP_Log(RTMP_LOGDEBUG, "%s, server invoking <%s>", __FUNCTION__, method.av_val);
 
-    RTMPError error;
+    RTMPError error = {0};
     
   if (AVMATCH(&method, &av__result))
     {
@@ -2563,7 +2597,7 @@ HandleInvoke(RTMP *r, const char *body, unsigned int nBodySize)
   else if (AVMATCH(&method, &av_close))
     {
       RTMP_Log(RTMP_LOGERROR, "rtmp server requested close");
-        RTMPError error;
+        RTMPError error = {0};
         char *msg = "RTMP server requested close.";
         RTMPError_Alloc(&error, strlen(msg));
         error.code = RTMPErrorServerRequestedClose;
