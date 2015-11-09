@@ -4416,7 +4416,6 @@ static const char flvHeader[] = { 'F', 'L', 'V', 0x01,
 int
 RTMP_Read1(RTMP *r, char *buf, int size)
 {
-    printf("[librtmp] RTMP_Read1 invoked\n");
     int nRead = 0, total = 0;
     
     /* can't continue */
