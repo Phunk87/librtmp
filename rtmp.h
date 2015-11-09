@@ -262,6 +262,7 @@ extern "C"
     RTMPErrorCallback m_errorCallback;
     RTMPError *m_error;
     void *m_userData;
+      int m_is_closing;
   } RTMP;
 
   int RTMP_ParseURL(const char *url, int *protocol, AVal *host,

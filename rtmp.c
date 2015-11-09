@@ -268,6 +268,7 @@ RTMP_Init(RTMP *r)
     r->m_errorCallback = NULL;
     r->m_error = NULL;
     r->m_userData = NULL;
+    r->m_is_closing = 0;
 }
 
 void
@@ -1545,8 +1546,8 @@ WriteN(RTMP *r, const char *buffer, int n, RTMPError *error)
       if (nBytes < 0)
 	{
         int sockerr = GetSockError();
-        RTMP_Log(RTMP_LOGERROR, "%s, RTMP send error %d (%d bytes)", __FUNCTION__,
-	      sockerr, n);
+        RTMP_Log(RTMP_LOGERROR, "%s, RTMP send error %d, %s, (%d bytes)", __FUNCTION__,
+	      sockerr, strerror(sockerr), n);
 
         if (sockerr == EINTR && !RTMP_ctrlC)
             continue;
@@ -3608,8 +3609,11 @@ RTMP_Serve(RTMP *r, RTMPError *error)
 void
 RTMP_Close(RTMP *r, RTMPError *error)
 {
+    if (r->m_is_closing) {
+        return;
+    }
+    r->m_is_closing = 1;
   int i;
-
   if (RTMP_IsConnected(r))
     {
       if (r->m_stream_id > 0)
