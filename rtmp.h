@@ -342,6 +342,7 @@ extern "C"
   int RTMP_SendClientBW(RTMP *r, RTMPError *error);
   void RTMP_DropRequest(RTMP *r, int i, int freeit);
   int RTMP_Read(RTMP *r, char *buf, int size);
+    int RTMP_Read1(RTMP *r, char *buf, int size);
   int RTMP_Write(RTMP *r, const char *buf, int size, RTMPError *error);
 
 /* hashswf.c */

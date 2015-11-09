@@ -4410,6 +4410,74 @@ static const char flvHeader[] = { 'F', 'L', 'V', 0x01,
 
 #define HEADERBUF	(128*1024)
 int
+RTMP_Read1(RTMP *r, char *buf, int size)
+{
+    printf("[librtmp] RTMP_Read1 invoked\n");
+    int nRead = 0, total = 0;
+    
+    /* can't continue */
+fail:
+    switch (r->m_read.status) {
+        case RTMP_READ_EOF:
+        case RTMP_READ_COMPLETE:
+            return 0;
+        case RTMP_READ_ERROR:  /* corrupted stream, resume failed */
+            SetSockError(EINVAL);
+            return -1;
+        default:
+            break;
+    }
+    
+    if ((r->m_read.flags & RTMP_READ_SEEKING) && r->m_read.buf)
+    {
+        /* drop whatever's here */
+        free(r->m_read.buf);
+        r->m_read.buf = NULL;
+        r->m_read.bufpos = NULL;
+        r->m_read.buflen = 0;
+    }
+    
+    /* If there's leftover data buffered, use it up */
+    if (r->m_read.buf)
+    {
+        nRead = r->m_read.buflen;
+        if (nRead > size)
+            nRead = size;
+        memcpy(buf, r->m_read.bufpos, nRead);
+        r->m_read.buflen -= nRead;
+        if (!r->m_read.buflen)
+        {
+            free(r->m_read.buf);
+            r->m_read.buf = NULL;
+            r->m_read.bufpos = NULL;
+        }
+        else
+        {
+            r->m_read.bufpos += nRead;
+        }
+        buf += nRead;
+        total += nRead;
+        size -= nRead;
+    }
+    
+    while (size > 0 && (nRead = Read_1_Packet(r, buf, size)) >= 0)
+    {
+        if (!nRead) continue;
+        buf += nRead;
+        total += nRead;
+        size -= nRead;
+        break;
+    }
+    if (nRead < 0)
+        r->m_read.status = nRead;
+    
+    if (size < 0)
+        total += size;
+    return total;
+}
+
+
+int
 RTMP_Read(RTMP *r, char *buf, int size)
 {
   int nRead = 0, total = 0;
@@ -4428,8 +4496,7 @@ fail:
   }
 
   /* first time thru */
-//  if (!(r->m_read.flags & RTMP_READ_HEADER))
-    if (0)
+  if (!(r->m_read.flags & RTMP_READ_HEADER))
     {
       if (!(r->m_read.flags & RTMP_READ_RESUME))
 	{
