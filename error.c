@@ -13,8 +13,8 @@ void RTMPError_Alloc(RTMPError *error, size_t msg_size) {
 void RTMPError_Free(RTMPError *error) {
   if (error) {
     if (error->message) {
-      free(error->message);
-      error->message = NULL;
+        free(error->message);
+        error->message = NULL;
     }
   }
 }
