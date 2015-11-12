@@ -4416,114 +4416,67 @@ static const char flvHeader[] = { 'F', 'L', 'V', 0x01,
 int
 PILI_RTMP_Read(PILI_RTMP *r, char *buf, int size)
 {
-  int nRead = 0, total = 0;
-
-  /* can't continue */
+    int nRead = 0, total = 0;
+    
+    /* can't continue */
 fail:
-  switch (r->m_read.status) {
-  case RTMP_READ_EOF:
-  case RTMP_READ_COMPLETE:
-    return 0;
-  case RTMP_READ_ERROR:  /* corrupted stream, resume failed */
-    SetSockError(EINVAL);
-    return -1;
-  default:
-    break;
-  }
-
-  /* first time thru */
-//  if (!(r->m_read.flags & RTMP_READ_HEADER))
-    if (0)
-    {
-      if (!(r->m_read.flags & RTMP_READ_RESUME))
-	{
-	  char *mybuf = malloc(HEADERBUF), *end = mybuf + HEADERBUF;
-	  int cnt = 0;
-	  r->m_read.buf = mybuf;
-	  r->m_read.buflen = HEADERBUF;
-
-	  memcpy(mybuf, flvHeader, sizeof(flvHeader));
-	  r->m_read.buf += sizeof(flvHeader);
-	  r->m_read.buflen -= sizeof(flvHeader);
-
-	  while (r->m_read.timestamp == 0)
-	    {
-	      nRead = Read_1_Packet(r, r->m_read.buf, r->m_read.buflen);
-	      if (nRead < 0)
-		{
-		  free(mybuf);
-		  r->m_read.buf = NULL;
-		  r->m_read.buflen = 0;
-		  r->m_read.status = nRead;
-		  goto fail;
-		}
-	      /* buffer overflow, fix buffer and give up */
-	      if (r->m_read.buf < mybuf || r->m_read.buf > end) {
-	      	mybuf = realloc(mybuf, cnt + nRead);
-		memcpy(mybuf+cnt, r->m_read.buf, nRead);
-		r->m_read.buf = mybuf+cnt+nRead;
-	        break;
-	      }
-	      cnt += nRead;
-	      r->m_read.buf += nRead;
-	      r->m_read.buflen -= nRead;
-	      if (r->m_read.dataType == 5)
-	        break;
-	    }
-	  mybuf[4] = r->m_read.dataType;
-	  r->m_read.buflen = r->m_read.buf - mybuf;
-	  r->m_read.buf = mybuf;
-	  r->m_read.bufpos = mybuf;
-	}
-      r->m_read.flags |= RTMP_READ_HEADER;
+    switch (r->m_read.status) {
+        case RTMP_READ_EOF:
+        case RTMP_READ_COMPLETE:
+            return 0;
+        case RTMP_READ_ERROR:  /* corrupted stream, resume failed */
+            SetSockError(EINVAL);
+            return -1;
+        default:
+            break;
     }
-
-  if ((r->m_read.flags & RTMP_READ_SEEKING) && r->m_read.buf)
+    
+    if ((r->m_read.flags & RTMP_READ_SEEKING) && r->m_read.buf)
     {
-      /* drop whatever's here */
-      free(r->m_read.buf);
-      r->m_read.buf = NULL;
-      r->m_read.bufpos = NULL;
-      r->m_read.buflen = 0;
+        /* drop whatever's here */
+        free(r->m_read.buf);
+        r->m_read.buf = NULL;
+        r->m_read.bufpos = NULL;
+        r->m_read.buflen = 0;
     }
-
-  /* If there's leftover data buffered, use it up */
-  if (r->m_read.buf)
+    
+    /* If there's leftover data buffered, use it up */
+    if (r->m_read.buf)
     {
-      nRead = r->m_read.buflen;
-      if (nRead > size)
-	nRead = size;
-      memcpy(buf, r->m_read.bufpos, nRead);
-      r->m_read.buflen -= nRead;
-      if (!r->m_read.buflen)
-	{
-	  free(r->m_read.buf);
-	  r->m_read.buf = NULL;
-	  r->m_read.bufpos = NULL;
-	}
-      else
-	{
-	  r->m_read.bufpos += nRead;
-	}
-      buf += nRead;
-      total += nRead;
-      size -= nRead;
+        nRead = r->m_read.buflen;
+        if (nRead > size)
+            nRead = size;
+        memcpy(buf, r->m_read.bufpos, nRead);
+        r->m_read.buflen -= nRead;
+        if (!r->m_read.buflen)
+        {
+            free(r->m_read.buf);
+            r->m_read.buf = NULL;
+            r->m_read.bufpos = NULL;
+        }
+        else
+        {
+            r->m_read.bufpos += nRead;
+        }
+        buf += nRead;
+        total += nRead;
+        size -= nRead;
     }
-
-  while (size > 0 && (nRead = Read_1_Packet(r, buf, size)) >= 0)
+    
+    while (size > 0 && (nRead = Read_1_Packet(r, buf, size)) >= 0)
     {
-      if (!nRead) continue;
-      buf += nRead;
-      total += nRead;
-      size -= nRead;
-      break;
+        if (!nRead) continue;
+        buf += nRead;
+        total += nRead;
+        size -= nRead;
+        break;
     }
-  if (nRead < 0)
-    r->m_read.status = nRead;
-
-  if (size < 0)
-    total += size;
-  return total;
+    if (nRead < 0)
+        r->m_read.status = nRead;
+    
+    if (size < 0)
+        total += size;
+    return total;
 }
 
 static const AVal av_setDataFrame = AVC("@setDataFrame");
