@@ -68,11 +68,11 @@ extern "C"
 
 #define	RTMP_CHANNELS	65600
 
-  extern const char RTMPProtocolStringsLower[][7];
-  extern const AVal RTMP_DefaultFlashVer;
-  extern int RTMP_ctrlC;
+  extern const char PILI_RTMPProtocolStringsLower[][7];
+  extern const AVal PILI_RTMP_DefaultFlashVer;
+  extern int PILI_RTMP_ctrlC;
 
-  uint32_t RTMP_GetTime(void);
+  uint32_t PILI_RTMP_GetTime(void);
 
 #define RTMP_PACKET_TYPE_AUDIO 0x08
 #define RTMP_PACKET_TYPE_VIDEO 0x09
@@ -85,15 +85,15 @@ extern "C"
 #define RTMP_PACKET_SIZE_SMALL    2
 #define RTMP_PACKET_SIZE_MINIMUM  3
 
-  typedef struct RTMPChunk
+  typedef struct PILI_RTMPChunk
   {
     int c_headerSize;
     int c_chunkSize;
     char *c_chunk;
     char c_header[RTMP_MAX_HEADER_SIZE];
-  } RTMPChunk;
+  } PILI_RTMPChunk;
 
-  typedef struct RTMPPacket
+  typedef struct PILI_RTMPPacket
   {
     uint8_t m_headerType;
     uint8_t m_packetType;
@@ -103,11 +103,11 @@ extern "C"
     int32_t m_nInfoField2;	/* last 4 bytes in a long header */
     uint32_t m_nBodySize;
     uint32_t m_nBytesRead;
-    RTMPChunk *m_chunk;
+    PILI_RTMPChunk *m_chunk;
     char *m_body;
-  } RTMPPacket;
+  } PILI_RTMPPacket;
 
-  typedef struct RTMPSockBuf
+  typedef struct PILI_RTMPSockBuf
   {
     int sb_socket;
     int sb_size;		/* number of unprocessed bytes in buffer */
@@ -115,16 +115,16 @@ extern "C"
     char sb_buf[RTMP_BUFFER_CACHE_SIZE];	/* data read from socket */
     int sb_timedout;
     void *sb_ssl;
-  } RTMPSockBuf;
+  } PILI_RTMPSockBuf;
 
-  void RTMPPacket_Reset(RTMPPacket *p);
-  void RTMPPacket_Dump(RTMPPacket *p);
-  int RTMPPacket_Alloc(RTMPPacket *p, int nSize);
-  void RTMPPacket_Free(RTMPPacket *p);
+  void PILI_RTMPPacket_Reset(PILI_RTMPPacket *p);
+  void PILI_RTMPPacket_Dump(PILI_RTMPPacket *p);
+  int PILI_RTMPPacket_Alloc(PILI_RTMPPacket *p, int nSize);
+  void PILI_RTMPPacket_Free(PILI_RTMPPacket *p);
 
 #define RTMPPacket_IsReady(a)	((a)->m_nBytesRead == (a)->m_nBodySize)
 
-  typedef struct RTMP_LNK
+  typedef struct PILI_RTMP_LNK
   {
     AVal hostname;
     AVal sockshost;
@@ -172,10 +172,10 @@ extern "C"
     uint8_t SWFHash[RTMP_SWF_HASHLEN];
     char SWFVerificationResponse[RTMP_SWF_HASHLEN+10];
 #endif
-  } RTMP_LNK;
+  } PILI_RTMP_LNK;
 
   /* state for read() wrapper */
-  typedef struct RTMP_READ
+  typedef struct PILI_RTMP_READ
   {
     char *buf;
     char *bufpos;
@@ -204,17 +204,17 @@ extern "C"
     uint32_t nInitialFrameSize;
     uint32_t nIgnoredFrameCounter;
     uint32_t nIgnoredFlvFrameCounter;
-  } RTMP_READ;
+  } PILI_RTMP_READ;
 
-  typedef struct RTMP_METHOD
+  typedef struct PILI_RTMP_METHOD
   {
     AVal name;
     int num;
-  } RTMP_METHOD;
+  } PILI_RTMP_METHOD;
 
-  typedef void (*RTMPErrorCallback)(RTMPError *error, void *userData);
+  typedef void (*PILI_RTMPErrorCallback)(RTMPError *error, void *userData);
 
-  typedef struct RTMP
+  typedef struct PILI_RTMP
   {
     int m_inChunkSize;
     int m_outChunkSize;
@@ -236,10 +236,10 @@ extern "C"
 
     int m_numInvokes;
     int m_numCalls;
-    RTMP_METHOD *m_methodCalls;	/* remote method calls queue */
+    PILI_RTMP_METHOD *m_methodCalls;	/* remote method calls queue */
 
-    RTMPPacket *m_vecChannelsIn[RTMP_CHANNELS];
-    RTMPPacket *m_vecChannelsOut[RTMP_CHANNELS];
+    PILI_RTMPPacket *m_vecChannelsIn[RTMP_CHANNELS];
+    PILI_RTMPPacket *m_vecChannelsOut[RTMP_CHANNELS];
     int m_channelTimestamp[RTMP_CHANNELS];	/* abs timestamp of last packet */
 
     double m_fAudioCodecs;	/* audioCodecs for the connect packet */
@@ -254,27 +254,27 @@ extern "C"
     int m_unackd;
     AVal m_clientID;
 
-    RTMP_READ m_read;
-    RTMPPacket m_write;
-    RTMPSockBuf m_sb;
-    RTMP_LNK Link;
+    PILI_RTMP_READ m_read;
+    PILI_RTMPPacket m_write;
+    PILI_RTMPSockBuf m_sb;
+    PILI_RTMP_LNK Link;
 
-    RTMPErrorCallback m_errorCallback;
+    PILI_RTMPErrorCallback m_errorCallback;
     RTMPError *m_error;
     void *m_userData;
       int m_is_closing;
-  } RTMP;
+  } PILI_RTMP;
 
-  int RTMP_ParseURL(const char *url, int *protocol, AVal *host,
+  int PILI_RTMP_ParseURL(const char *url, int *protocol, AVal *host,
 		     unsigned int *port, AVal *playpath, AVal *app);
 
-  void RTMP_ParsePlaypath(AVal *in, AVal *out);
-  void RTMP_SetBufferMS(RTMP *r, int size);
-  void RTMP_UpdateBufferMS(RTMP *r, RTMPError *error);
+  void PILI_RTMP_ParsePlaypath(AVal *in, AVal *out);
+  void PILI_RTMP_SetBufferMS(PILI_RTMP *r, int size);
+  void PILI_RTMP_UpdateBufferMS(PILI_RTMP *r, RTMPError *error);
 
-  int RTMP_SetOpt(RTMP *r, const AVal *opt, AVal *arg, RTMPError *error);
-  int RTMP_SetupURL(RTMP *r, const char *url, RTMPError *error);
-  void RTMP_SetupStream(RTMP *r, int protocol,
+  int PILI_RTMP_SetOpt(PILI_RTMP *r, const AVal *opt, AVal *arg, RTMPError *error);
+  int PILI_RTMP_SetupURL(PILI_RTMP *r, const char *url, RTMPError *error);
+  void PILI_RTMP_SetupStream(PILI_RTMP *r, int protocol,
 			AVal *hostname,
 			unsigned int port,
 			AVal *sockshost,
@@ -291,62 +291,62 @@ extern "C"
 			int dStart,
 			int dStop, int bLiveStream, long int timeout);
 
-  int RTMP_Connect(RTMP *r, RTMPPacket *cp, RTMPError *error);
+  int PILI_RTMP_Connect(PILI_RTMP *r, PILI_RTMPPacket *cp, RTMPError *error);
   struct sockaddr;
-  int RTMP_Connect0(RTMP *r, struct sockaddr *svc, RTMPError *error);
-  int RTMP_Connect1(RTMP *r, RTMPPacket *cp, RTMPError *error);
-  int RTMP_Serve(RTMP *r, RTMPError *error);
+  int PILI_RTMP_Connect0(PILI_RTMP *r, struct sockaddr *svc, RTMPError *error);
+  int PILI_RTMP_Connect1(PILI_RTMP *r, PILI_RTMPPacket *cp, RTMPError *error);
+  int PILI_RTMP_Serve(PILI_RTMP *r, RTMPError *error);
 
-  int RTMP_ReadPacket(RTMP *r, RTMPPacket *packet);
-  int RTMP_SendPacket(RTMP *r, RTMPPacket *packet, int queue, RTMPError *error);
-  int RTMP_SendChunk(RTMP *r, RTMPChunk *chunk, RTMPError *error);
-  int RTMP_IsConnected(RTMP *r);
-  int RTMP_Socket(RTMP *r);
-  int RTMP_IsTimedout(RTMP *r);
-  double RTMP_GetDuration(RTMP *r);
-  int RTMP_ToggleStream(RTMP *r, RTMPError *error);
+  int PILI_RTMP_ReadPacket(PILI_RTMP *r, PILI_RTMPPacket *packet);
+  int PILI_RTMP_SendPacket(PILI_RTMP *r, PILI_RTMPPacket *packet, int queue, RTMPError *error);
+  int PILI_RTMP_SendChunk(PILI_RTMP *r, PILI_RTMPChunk *chunk, RTMPError *error);
+  int PILI_RTMP_IsConnected(PILI_RTMP *r);
+  int PILI_RTMP_Socket(PILI_RTMP *r);
+  int PILI_RTMP_IsTimedout(PILI_RTMP *r);
+  double PILI_RTMP_GetDuration(PILI_RTMP *r);
+  int PILI_RTMP_ToggleStream(PILI_RTMP *r, RTMPError *error);
 
-  int RTMP_ConnectStream(RTMP *r, int seekTime, RTMPError *error);
-  int RTMP_ReconnectStream(RTMP *r, int seekTime, RTMPError *error);
-  void RTMP_DeleteStream(RTMP *r, RTMPError *error);
-  int RTMP_GetNextMediaPacket(RTMP *r, RTMPPacket *packet);
-  int RTMP_ClientPacket(RTMP *r, RTMPPacket *packet);
+  int PILI_RTMP_ConnectStream(PILI_RTMP *r, int seekTime, RTMPError *error);
+  int PILI_RTMP_ReconnectStream(PILI_RTMP *r, int seekTime, RTMPError *error);
+  void PILI_RTMP_DeleteStream(PILI_RTMP *r, RTMPError *error);
+  int PILI_RTMP_GetNextMediaPacket(PILI_RTMP *r, PILI_RTMPPacket *packet);
+  int PILI_RTMP_ClientPacket(PILI_RTMP *r, PILI_RTMPPacket *packet);
 
-  void RTMP_Init(RTMP *r);
-  void RTMP_Close(RTMP *r, RTMPError *error);
-  RTMP *RTMP_Alloc(void);
-  void RTMP_Free(RTMP *r);
-  void RTMP_EnableWrite(RTMP *r);
+  void PILI_RTMP_Init(PILI_RTMP *r);
+  void PILI_RTMP_Close(PILI_RTMP *r, RTMPError *error);
+  PILI_RTMP *PILI_RTMP_Alloc(void);
+  void PILI_RTMP_Free(PILI_RTMP *r);
+  void PILI_RTMP_EnableWrite(PILI_RTMP *r);
 
-  int RTMP_LibVersion(void);
-  void RTMP_UserInterrupt(void);	/* user typed Ctrl-C */
+  int PILI_RTMP_LibVersion(void);
+  void PILI_RTMP_UserInterrupt(void);	/* user typed Ctrl-C */
 
-  int RTMP_SendCtrl(RTMP *r, short nType, unsigned int nObject,
+  int PILI_RTMP_SendCtrl(PILI_RTMP *r, short nType, unsigned int nObject,
 		     unsigned int nTime, RTMPError *error);
 
   /* caller probably doesn't know current timestamp, should
    * just use RTMP_Pause instead
    */
-  int RTMP_SendPause(RTMP *r, int DoPause, int dTime, RTMPError *error);
-  int RTMP_Pause(RTMP *r, int DoPause, RTMPError *error);
+  int PILI_RTMP_SendPause(PILI_RTMP *r, int DoPause, int dTime, RTMPError *error);
+  int PILI_RTMP_Pause(PILI_RTMP *r, int DoPause, RTMPError *error);
 
-  int RTMP_FindFirstMatchingProperty(AMFObject *obj, const AVal *name,
+  int PILI_RTMP_FindFirstMatchingProperty(AMFObject *obj, const AVal *name,
 				      AMFObjectProperty * p);
 
-  int RTMPSockBuf_Fill(RTMPSockBuf *sb);
-  int RTMPSockBuf_Send(RTMPSockBuf *sb, const char *buf, int len);
-  int RTMPSockBuf_Close(RTMPSockBuf *sb);
+  int PILI_RTMPSockBuf_Fill(PILI_RTMPSockBuf *sb);
+  int PILI_RTMPSockBuf_Send(PILI_RTMPSockBuf *sb, const char *buf, int len);
+  int PILI_RTMPSockBuf_Close(PILI_RTMPSockBuf *sb);
 
-  int RTMP_SendCreateStream(RTMP *r, RTMPError *error);
-  int RTMP_SendSeek(RTMP *r, int dTime, RTMPError *error);
-  int RTMP_SendServerBW(RTMP *r, RTMPError *error);
-  int RTMP_SendClientBW(RTMP *r, RTMPError *error);
-  void RTMP_DropRequest(RTMP *r, int i, int freeit);
-  int RTMP_Read(RTMP *r, char *buf, int size);
-  int RTMP_Write(RTMP *r, const char *buf, int size, RTMPError *error);
+  int PILI_RTMP_SendCreateStream(PILI_RTMP *r, RTMPError *error);
+  int PILI_RTMP_SendSeek(PILI_RTMP *r, int dTime, RTMPError *error);
+  int PILI_RTMP_SendServerBW(PILI_RTMP *r, RTMPError *error);
+  int PILI_RTMP_SendClientBW(PILI_RTMP *r, RTMPError *error);
+  void PILI_RTMP_DropRequest(PILI_RTMP *r, int i, int freeit);
+  int PILI_RTMP_Read(PILI_RTMP *r, char *buf, int size);
+  int PILI_RTMP_Write(PILI_RTMP *r, const char *buf, int size, RTMPError *error);
 
 /* hashswf.c */
-  int RTMP_HashSWF(const char *url, unsigned int *size, unsigned char *hash,
+  int PILI_RTMP_HashSWF(const char *url, unsigned int *size, unsigned char *hash,
 		   int age);
 
 #ifdef __cplusplus

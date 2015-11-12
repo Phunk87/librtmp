@@ -87,7 +87,7 @@ HTTP_get(struct HTTP_ctx *http, const char *url, HTTP_read_callback *cb)
   int len_known;
   HTTPResult ret = HTTPRES_OK;
   struct sockaddr_in sa;
-  RTMPSockBuf sb = {0};
+  PILI_RTMPSockBuf sb = {0};
 
   http->status = -1;
 
@@ -172,7 +172,7 @@ HTTP_get(struct HTTP_ctx *http, const char *url, HTTP_read_callback *cb)
 #endif
     }
 #endif
-  RTMPSockBuf_Send(&sb, sb.sb_buf, i);
+  PILI_RTMPSockBuf_Send(&sb, sb.sb_buf, i);
 
   /* set timeout */
 #define HTTP_TIMEOUT	5
@@ -188,7 +188,7 @@ HTTP_get(struct HTTP_ctx *http, const char *url, HTTP_read_callback *cb)
 
   sb.sb_size = 0;
   sb.sb_timedout = FALSE;
-  if (RTMPSockBuf_Fill(&sb) < 1)
+  if (PILI_RTMPSockBuf_Fill(&sb) < 1)
     {
       ret = HTTPRES_LOST_CONNECTION;
       goto leave;
@@ -255,7 +255,7 @@ HTTP_get(struct HTTP_ctx *http, const char *url, HTTP_read_callback *cb)
       sb.sb_start = p2;
       if (sb.sb_size < 1)
 	{
-	  if (RTMPSockBuf_Fill(&sb) < 1)
+	  if (PILI_RTMPSockBuf_Fill(&sb) < 1)
 	    {
 	      ret = HTTPRES_LOST_CONNECTION;
 	      goto leave;
@@ -265,7 +265,7 @@ HTTP_get(struct HTTP_ctx *http, const char *url, HTTP_read_callback *cb)
 
   len_known = flen > 0;
   while ((!len_known || flen > 0) &&
-	 (sb.sb_size > 0 || RTMPSockBuf_Fill(&sb) > 0))
+	 (sb.sb_size > 0 || PILI_RTMPSockBuf_Fill(&sb) > 0))
     {
       cb(sb.sb_start, 1, sb.sb_size, http->data);
       if (len_known)
@@ -278,7 +278,7 @@ HTTP_get(struct HTTP_ctx *http, const char *url, HTTP_read_callback *cb)
     ret = HTTPRES_LOST_CONNECTION;
 
 leave:
-  RTMPSockBuf_Close(&sb);
+  PILI_RTMPSockBuf_Close(&sb);
   return ret;
 }
 
