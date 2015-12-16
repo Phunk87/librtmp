@@ -269,6 +269,7 @@ PILI_RTMP_Init(PILI_RTMP *r)
     r->m_error = NULL;
     r->m_userData = NULL;
     r->m_is_closing = 0;
+    r->m_tcp_nodelay = 1;
 }
 
 void
