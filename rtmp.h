@@ -262,7 +262,8 @@ extern "C"
     PILI_RTMPErrorCallback m_errorCallback;
     RTMPError *m_error;
     void *m_userData;
-      int m_is_closing;
+    int m_is_closing;
+    int m_tcp_nodelay;
   } PILI_RTMP;
 
   int PILI_RTMP_ParseURL(const char *url, int *protocol, AVal *host,
