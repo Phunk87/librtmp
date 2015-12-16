@@ -832,7 +832,6 @@ finish:
 int
 PILI_RTMP_Connect0(PILI_RTMP *r, struct sockaddr * service, RTMPError *error)
 {
-  int on = 1;
   r->m_sb.sb_timedout = FALSE;
   r->m_pausing = 0;
   r->m_fDuration = 0.0;
@@ -929,8 +928,11 @@ PILI_RTMP_Connect0(PILI_RTMP *r, struct sockaddr * service, RTMPError *error)
     /* ignore sigpipe */
     int     kOne = 1;
     setsockopt(r->m_sb.sb_socket, SOL_SOCKET, SO_NOSIGPIPE, &kOne, sizeof(kOne));
-
-  setsockopt(r->m_sb.sb_socket, IPPROTO_TCP, TCP_NODELAY, (char *) &on, sizeof(on));
+    if (r->m_tcp_nodelay)
+    {
+        int on = 1;
+        setsockopt(r->m_sb.sb_socket, IPPROTO_TCP, TCP_NODELAY, (char *) &on, sizeof(on));
+    }
 
   return TRUE;
 }
