@@ -927,7 +927,11 @@ PILI_RTMP_Connect0(PILI_RTMP *r, struct sockaddr * service, RTMPError *error)
     
     /* ignore sigpipe */
     int     kOne = 1;
+#ifdef __linux
+    setsockopt(r->m_sb.sb_socket, SOL_SOCKET, MSG_NOSIGNAL, &kOne, sizeof(kOne));
+#else
     setsockopt(r->m_sb.sb_socket, SOL_SOCKET, SO_NOSIGPIPE, &kOne, sizeof(kOne));
+#endif
     if (r->m_tcp_nodelay)
     {
         int on = 1;
