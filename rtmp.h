@@ -214,6 +214,14 @@ extern "C"
 
   typedef void (*PILI_RTMPErrorCallback)(RTMPError *error, void *userData);
 
+    typedef struct PILI_CONNECTION_TIME
+    {
+        uint32_t connect_time;
+        uint32_t handshake_time;
+    }PILI_CONNECTION_TIME;
+    
+    typedef void (*PILI_RTMP_ConnectionTimeCallback)(PILI_CONNECTION_TIME* conn_time, void *userData);
+
   typedef struct PILI_RTMP
   {
     int m_inChunkSize;
@@ -260,10 +268,12 @@ extern "C"
     PILI_RTMP_LNK Link;
 
     PILI_RTMPErrorCallback m_errorCallback;
+    PILI_RTMP_ConnectionTimeCallback m_connCallback;
     RTMPError *m_error;
     void *m_userData;
     int m_is_closing;
     int m_tcp_nodelay;
+      uint32_t ip;
   } PILI_RTMP;
 
   int PILI_RTMP_ParseURL(const char *url, int *protocol, AVal *host,

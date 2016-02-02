@@ -270,6 +270,9 @@ PILI_RTMP_Init(PILI_RTMP *r)
     r->m_userData = NULL;
     r->m_is_closing = 0;
     r->m_tcp_nodelay = 1;
+    
+    r->m_connCallback = NULL;
+    r->ip = 0;
 }
 
 void
@@ -1028,6 +1031,7 @@ int
 PILI_RTMP_Connect(PILI_RTMP *r, PILI_RTMPPacket *cp, RTMPError *error)
 {
   struct sockaddr_in service;
+  struct PILI_CONNECTION_TIME conn_time;
   if (!r->Link.hostname.av_len)
     return FALSE;
 
@@ -1048,13 +1052,21 @@ PILI_RTMP_Connect(PILI_RTMP *r, PILI_RTMPPacket *cp, RTMPError *error)
             return FALSE;
         }
     }
-
+    r->ip = service.sin_addr.s_addr;
+   int t1  = PILI_RTMP_GetTime();
   if (!PILI_RTMP_Connect0(r, (struct sockaddr *)&service, error))
     return FALSE;
-
+    conn_time.connect_time = PILI_RTMP_GetTime() - t1;
   r->m_bSendCounter = TRUE;
 
-  return PILI_RTMP_Connect1(r, cp, error);
+    int t2 = PILI_RTMP_GetTime();
+    int ret = PILI_RTMP_Connect1(r, cp, error);
+    conn_time.handshake_time = PILI_RTMP_GetTime() -t2;
+    
+    if (r->m_connCallback != NULL) {
+        r->m_connCallback(&conn_time, r->m_userData);
+    }
+    return ret;
 }
 
 static int
