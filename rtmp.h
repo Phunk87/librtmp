@@ -264,6 +264,7 @@ extern "C"
     void *m_userData;
     int m_is_closing;
     int m_tcp_nodelay;
+    char *ips;
   } PILI_RTMP;
 
   int PILI_RTMP_ParseURL(const char *url, int *protocol, AVal *host,

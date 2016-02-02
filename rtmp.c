@@ -27,6 +27,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <string.h>
+#include <poll.h>
+#include <fcntl.h>
 
 #include "rtmp_sys.h"
 #include "log.h"
@@ -239,7 +242,9 @@ PILI_RTMP_Free(PILI_RTMP *r)
     r->m_userData = NULL;
     RTMPError_Free(r->m_error);
     r->m_error = NULL;
-    
+    if (r->ips != NULL) {
+        free(r->ips);
+    }
     free(r);
 }
 
@@ -270,6 +275,8 @@ PILI_RTMP_Init(PILI_RTMP *r)
     r->m_userData = NULL;
     r->m_is_closing = 0;
     r->m_tcp_nodelay = 1;
+    
+    r->ips = NULL;
 }
 
 void
@@ -799,11 +806,9 @@ add_addr_info(PILI_RTMP *r, struct sockaddr_in *service, AVal *host, int port, R
     }
 
   service->sin_addr.s_addr = inet_addr(hostname);
-  if (service->sin_addr.s_addr == INADDR_NONE)
-    {
+  if (service->sin_addr.s_addr == INADDR_NONE){
       struct hostent *host = gethostbyname(hostname);
-      if (host == NULL || host->h_addr == NULL)
-	{
+      if (host == NULL || host->h_addr == NULL){
         if (error) {
             char msg[100];
             memset(msg, 0, 100);
@@ -818,7 +823,7 @@ add_addr_info(PILI_RTMP *r, struct sockaddr_in *service, AVal *host, int port, R
         RTMP_Log(RTMP_LOGERROR, "Problem accessing the DNS. (addr: %s)", hostname);
         ret = FALSE;
         goto finish;
-	}
+	  }
       service->sin_addr = *(struct in_addr *)host->h_addr;
     }
 
@@ -829,8 +834,7 @@ finish:
   return ret;
 }
 
-int
-PILI_RTMP_Connect0(PILI_RTMP *r, struct sockaddr * service, RTMPError *error)
+int PILI_RTMP_Connect0(PILI_RTMP *r, struct sockaddr * service, RTMPError *error)
 {
   r->m_sb.sb_timedout = FALSE;
   r->m_pausing = 0;
@@ -1024,8 +1028,162 @@ PILI_RTMP_Connect1(PILI_RTMP *r, PILI_RTMPPacket *cp, RTMPError *error)
   return TRUE;
 }
 
+int ipCount(const char *ips){
+    const char* p = ips;
+    int count = 1;
+    while (*p != '\0') {
+        if (*p == ',') {
+            count++;
+        }
+        p++;
+    }
+    return count;
+}
+
+static void clean_fd(struct pollfd *fds, int size, int ignore){
+    for (int i=0; i<size; i++) {
+        if (fds[i].fd != ignore ) {
+            close(fds[i].fd);
+        }
+    }
+}
+
+static
+
 int
-PILI_RTMP_Connect(PILI_RTMP *r, PILI_RTMPPacket *cp, RTMPError *error)
+PILI_RTMP_Connect0_2(PILI_RTMP *r, struct sockaddr * services, int services_count, RTMPError *error)
+{
+    r->m_sb.sb_timedout = FALSE;
+    r->m_pausing = 0;
+    r->m_fDuration = 0.0;
+    r->m_sb.sb_socket = -1;
+    
+    struct pollfd *fds = (struct pollfd *)calloc(services_count * sizeof(struct pollfd), 1);
+    for (int i = 0; i< services_count; i++) {
+        fds[i].fd = -1;
+    }
+    for (int i = 0; i< services_count; i++) {
+        struct pollfd *pfd = fds+i;
+        pfd->fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        pfd->events = POLLOUT | POLLERR | POLLHUP | POLLNVAL;
+        if (pfd->fd == -1) {
+            int err = GetSockError();
+            
+            if (error) {
+                char msg[100];
+                memset(msg, 0, 100);
+                strcat(msg, "Failed to create socket. ");
+                strcat(msg, strerror(err));
+                RTMPError_Alloc(error, strlen(msg));
+                error->code = RTMPErrorFailedToCreateSocket;
+                strcpy(error->message, msg);
+                RTMP_Log(RTMP_LOGERROR, "%s, failed to create socket. Error: %d (%s)", __FUNCTION__, err, strerror(err));
+            }
+            clean_fd(fds, services_count, -1);
+            free(fds);
+            return FALSE;
+        }
+        int flags = fcntl(pfd->fd, F_GETFL,0);
+        fcntl(pfd->fd, F_SETFL, flags | O_NONBLOCK);
+        connect(pfd->fd, services+i, sizeof(struct sockaddr));
+    }
+    int j = 0;
+    for (;j<500 ; j++) {
+        int ready = poll(fds, services_count, 40);
+        if (ready >0) {
+            int invalid_count = 0;
+            for (int k=0; k<services_count; k++) {
+                struct pollfd *pfd = fds+k;
+                if (pfd->revents & (POLLERR | POLLHUP | POLLNVAL)) {
+                    invalid_count ++;
+                }else if (pfd->revents & POLLOUT){
+                    r->m_sb.sb_socket = pfd->fd;
+                    break;
+                }
+            }
+            if (invalid_count == services_count) {
+                break;
+            }
+            if (r->m_sb.sb_socket != -1 ) {
+                break;
+            }
+        }
+    }
+    clean_fd(fds, services_count, r->m_sb.sb_socket);
+    free(fds);
+    if (j == 500 || r->m_sb.sb_socket == -1) {
+        return FALSE;
+    }
+    
+    int flags = fcntl(r->m_sb.sb_socket, F_GETFL,0);
+    flags &= ~O_NONBLOCK;
+    fcntl(r->m_sb.sb_socket, F_SETFL, flags);
+    
+    /* set receive timeout */
+    {
+        SET_RCVTIMEO(tv, r->Link.timeout);
+        if (setsockopt
+            (r->m_sb.sb_socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(tv)))
+        {
+            RTMP_Log(RTMP_LOGERROR, "%s, Setting socket recieve timeout to %ds failed!",
+                     __FUNCTION__, r->Link.timeout);
+        }
+    }
+    
+    /* set send timeout*/
+    {
+        struct timeval timeout;
+        timeout.tv_sec = r->Link.send_timeout;
+        timeout.tv_usec = 0;
+        
+        if (setsockopt
+            (r->m_sb.sb_socket, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout)))
+        {
+            RTMP_Log(RTMP_LOGERROR, "%s, Setting socket send timeout to %ds failed!",
+                     __FUNCTION__, r->Link.timeout);
+        }
+    }
+    
+    /* ignore sigpipe */
+    int     kOne = 1;
+    setsockopt(r->m_sb.sb_socket, SOL_SOCKET, SO_NOSIGPIPE, &kOne, sizeof(kOne));
+    if (r->m_tcp_nodelay)
+    {
+        int on = 1;
+        setsockopt(r->m_sb.sb_socket, IPPROTO_TCP, TCP_NODELAY, (char *) &on, sizeof(on));
+    }
+    
+    return TRUE;
+}
+
+int
+PILI_RTMP_Connect_MultiIP(PILI_RTMP *r, PILI_RTMPPacket *cp, RTMPError *error){
+    int count = ipCount(r->ips);
+    struct sockaddr_in* services = (struct sockaddr_in*)calloc(count * sizeof(struct sockaddr_in), 1);
+    char* p = strdup(r->ips);
+    char* last = NULL;
+    char* pos = strtok_r(p, ",", &last);
+    int i = 0;
+    while(pos!=NULL) {
+        services[i].sin_family = AF_INET;
+        services[i].sin_addr.s_addr = inet_addr(pos);
+        services[i].sin_port = htons(r->Link.port);
+        pos = strtok_r(NULL, ",", &last);
+    } 
+    free(p);
+    if (!PILI_RTMP_Connect0_2(r, services, count, error)){
+        free(services);
+        return FALSE;
+    }
+    free(services);
+    r->m_bSendCounter = TRUE;
+    
+    return PILI_RTMP_Connect1(r, cp, error);
+}
+
+
+int
+PILI_RTMP_Connect_Origin(PILI_RTMP *r, PILI_RTMPPacket *cp, RTMPError *error)
 {
   struct sockaddr_in service;
   if (!r->Link.hostname.av_len)
@@ -1056,6 +1214,15 @@ PILI_RTMP_Connect(PILI_RTMP *r, PILI_RTMPPacket *cp, RTMPError *error)
 
   return PILI_RTMP_Connect1(r, cp, error);
 }
+
+int
+PILI_RTMP_Connect(PILI_RTMP *r, PILI_RTMPPacket *cp, RTMPError *error){
+    if (r->ips == NULL) {
+        return PILI_RTMP_Connect_Origin(r, cp, error);
+    }
+    return PILI_RTMP_Connect_MultiIP(r, cp, error);
+}
+
 
 static int
 SocksNegotiate(PILI_RTMP *r, RTMPError *error)
