@@ -1038,6 +1038,7 @@ PILI_RTMP_Connect(PILI_RTMP *r, PILI_RTMPPacket *cp, RTMPError *error)
   memset(&service, 0, sizeof(struct sockaddr_in));
   service.sin_family = AF_INET;
 
+  int t0 = PILI_RTMP_GetTime();
   if (r->Link.socksport)
     {
       /* Connect via SOCKS */
@@ -1052,6 +1053,7 @@ PILI_RTMP_Connect(PILI_RTMP *r, PILI_RTMPPacket *cp, RTMPError *error)
             return FALSE;
         }
     }
+    conn_time.dns_time = PILI_RTMP_GetTime() - t0;
     r->ip = service.sin_addr.s_addr;
    int t1  = PILI_RTMP_GetTime();
   if (!PILI_RTMP_Connect0(r, (struct sockaddr *)&service, error))

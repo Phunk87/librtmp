@@ -218,6 +218,7 @@ extern "C"
     {
         uint32_t connect_time;
         uint32_t handshake_time;
+        uint32_t dns_time;
     }PILI_CONNECTION_TIME;
     
     typedef void (*PILI_RTMP_ConnectionTimeCallback)(PILI_CONNECTION_TIME* conn_time, void *userData);
