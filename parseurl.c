@@ -130,6 +130,30 @@ parsehost:
 	}
 	p = slash+1;
 
+    /** parse domain
+    * rtmp://host:[port]/app/...?domain=a.com
+    *  use domain to replace host
+    */
+
+    if (ques) {
+        char* domain = strstr(ques, "domain=");
+        if (domain) {
+            domain += 7; //skip "domain="
+            char* end = strchr(domain, '&');
+            int host_len = 0;
+            if (end) {
+                host_len = end - domain;
+            }else {
+                host_len = strlen(domain);
+            }
+            if(host_len < 256) {
+                host->av_val = domain;
+                host->av_len = host_len;
+                RTMP_Log(RTMP_LOGDEBUG, "Parsed host  and domain  : %.*s", host_len, host->av_val);
+            }
+        }
+    }
+
 	{
 	/* parse application
 	 *
