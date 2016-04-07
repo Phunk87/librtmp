@@ -686,8 +686,8 @@ int PILI_RTMP_SetupURL(PILI_RTMP *r, const char *url, RTMPError *error)
     *ptr = '\0';
 
   len = (int)strlen(url);
-  ret = PILI_RTMP_ParseURL(url, &r->Link.protocol, &r->Link.hostname,
-  	&port, &r->Link.playpath0, &r->Link.app);
+  ret = PILI_RTMP_ParseURL2(url, &r->Link.protocol, &r->Link.hostname,
+  	&port, &r->Link.playpath0, &r->Link.app, &r->Link.domain);
   if (!ret)
     return ret;
   r->Link.port = port;
@@ -742,29 +742,35 @@ int PILI_RTMP_SetupURL(PILI_RTMP *r, const char *url, RTMPError *error)
       r->Link.tcUrl.av_val = url;
       if (r->Link.app.av_len)
         {
-          if (r->Link.app.av_val < url + len)
+            AVal* domain = &r->Link.domain;
+            if (domain->av_len == 0 && r->Link.app.av_val < url + len)
     	    {
     	      /* if app is part of original url, just use it */
               r->Link.tcUrl.av_len = r->Link.app.av_len + (r->Link.app.av_val - url);
     	    }
     	  else
     	    {
-    	      len = r->Link.hostname.av_len + r->Link.app.av_len +
-    		  sizeof("rtmpte://:65535/");
-	      r->Link.tcUrl.av_val = malloc(len);
-	      r->Link.tcUrl.av_len = snprintf(r->Link.tcUrl.av_val, len,
-		"%s://%.*s:%d/%.*s",
-		PILI_RTMPProtocolStringsLower[r->Link.protocol],
-		r->Link.hostname.av_len, r->Link.hostname.av_val,
-		r->Link.port,
-		r->Link.app.av_len, r->Link.app.av_val);
-	      r->Link.lFlags |= RTMP_LF_FTCU;
-	    }
+                if (domain->av_len == 0) {
+                    domain = &r->Link.hostname;
+                }
+                if (r->Link.port = 0) {
+                    r->Link.port = 1935;
+                }
+    	      len = domain->av_len + r->Link.app.av_len + sizeof("rtmpte://:65535/");
+              r->Link.tcUrl.av_val = malloc(len);
+	          r->Link.tcUrl.av_len = snprintf(r->Link.tcUrl.av_val, len,
+		              "%s://%.*s:%d/%.*s",
+		              PILI_RTMPProtocolStringsLower[r->Link.protocol],
+                      domain->av_len, domain->av_val,
+		              r->Link.port,
+		              r->Link.app.av_len, r->Link.app.av_val);
+	          r->Link.lFlags |= RTMP_LF_FTCU;
+	        }
         }
       else
         {
-	  r->Link.tcUrl.av_len = strlen(url);
-	}
+	       r->Link.tcUrl.av_len = strlen(url);
+	    }
     }
 
 #ifdef CRYPTO

@@ -127,6 +127,7 @@ extern "C"
   typedef struct PILI_RTMP_LNK
   {
     AVal hostname;
+    AVal domain;
     AVal sockshost;
 
     AVal playpath0;	/* parsed from URL */
@@ -278,6 +279,9 @@ extern "C"
 
   int PILI_RTMP_ParseURL(const char *url, int *protocol, AVal *host,
 		     unsigned int *port, AVal *playpath, AVal *app);
+    
+  int PILI_RTMP_ParseURL2(const char *url, int *protocol, AVal *host,
+                           unsigned int *port, AVal *playpath, AVal *app, AVal *domain);
 
   void PILI_RTMP_ParsePlaypath(AVal *in, AVal *out);
   void PILI_RTMP_SetBufferMS(PILI_RTMP *r, int size);
